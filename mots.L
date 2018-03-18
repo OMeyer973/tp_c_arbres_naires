@@ -1,0 +1,10 @@
+de
+gg
+hh
+kek
+la
+le
+lol
+prout
+un
+une
