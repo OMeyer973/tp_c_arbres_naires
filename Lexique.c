@@ -57,8 +57,6 @@ void afficheArbJoli(Arbre a, int niv) {
 	}
 }
 
-
-
 int recherche(Arbre a, char* mot) {
 	//retourne 1 si le mot existe dans l'arbre lexico, 0 sinon
 	if  (a == NULL)
@@ -75,7 +73,6 @@ int recherche(Arbre a, char* mot) {
 	return recherche(a->frered, mot);
 }
 
-
 void ajouteBranche(Arbre* a, char* mot) {
 	//ajoute un mot à un arbre vide (écrase l'arbre si non vide)
 	*a = alloueArbre(mot[0]); 
@@ -91,7 +88,7 @@ void ajouteMot(Arbre* a, char* mot) {
 
 	//si l'arbre est vide, on ajoute la branche entière
 	if (*a == NULL) {
-		printf("ajout d'une branche\n");
+		//printf("ajout d'une branche\n");
 		ajouteBranche(a, mot);
 	} 
 	
@@ -145,6 +142,23 @@ void afficheDico(Arbre a) {
 	}
 }
 
+void afficheMenu(){
+	/* affiche le menu */
+	printf("ARBRE LEXICOGRAPHIE - MENU : \n");
+	printf("Sélectionnez l'action voulue s il vous plaît \n");
+	printf("\t 1. Affichage des mots du lexique en ordre alphabétique.\n");
+	printf("\t 2. Sauvegarde des mots en ordre alphabétique.\n");
+	printf("\t 3. Recherche d un mot.\n");
+	printf("\t 4. Sauvegarde de l'arbre\n");
+}
+
+void selectMenu(int* action){
+	/* récupère l'action vioulue par l'utilisateur */
+	printf("Action n° : ");
+	scanf("%d", action);
+	printf("\n");
+}
+
 int main() {
 
 	Arbre a = NULL;
@@ -168,21 +182,39 @@ int main() {
 	ajouteMot(&a,"de");
 	ajouteMot(&a,"la");
 	ajouteMot(&a,"le");
-	ajouteMot(&a,"l\0");
-	ajouteMot(&a,"l\0");
 	ajouteMot(&a,"un");
 	ajouteMot(&a,"une");
 		
-	afficheArbJoli(a,0);
+	//afficheArbJoli(a,0);
+	
+	char* mot="";
+	afficheMenu();
+	int action;
+	selectMenu(&action);
 
-	printf("dico : \n");
-	afficheDico(a);
-
-	char* str = "d";
-	recherche(a, str) ? 
-		printf("\"%\" trouvé !\n",str) : 
-		printf("\"%s\" pas trouvé :(\n", str);
-
+	switch(action){
+		case 1:
+			printf("Affichage du lexique : \n");
+			afficheDico(a);
+			break;
+		case 2:
+			printf("Sauvegarde du lexique.\n");
+			break;
+		case 3:
+			printf("Indiquez le mot à rechercher : ");
+			scanf("%s", mot);
+			printf("\n");
+			recherche(a, mot) ?
+				printf("Le mot figure dans le lexique.\n"):
+				printf("Mot non trouvé.\n");
+			break;
+		case 4:
+			printf("Sauvegarde de l'arbre.\n");
+			break;
+		default:
+			printf("ERROR : numéro hors liste.\n");
+			break;
+	}
 
 	return 0;
 }
