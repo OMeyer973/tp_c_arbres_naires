@@ -1,10 +1,8 @@
-de
-gg
-hh
-kek
-la
+ce
+ces
+des
 le
-lol
-prout
-un
-une
+les
+lettre
+mes
+mettre

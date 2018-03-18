@@ -113,7 +113,7 @@ Arbre ConstruitArbre(FILE* in) {
 	return a;
 }
 
-void afficheArbreDico(Arbre a) {
+void afficheArbreLexique(Arbre a) {
 	//affiche dnas la console les mots de l'arbre lexico a en ordre alphabétique
 
 	static char buffer [MAXLE]; //chaine de caractère buffer qui contiendra tous les mots un à un
@@ -128,32 +128,33 @@ void afficheArbreDico(Arbre a) {
 			printf("%s\n", buffer);
 		else 
 			//sinon on continue de parcourir le mot courant
-			afficheArbreDico(a->filsg);
+			afficheArbreLexique(a->filsg);
 		//on décrémente la position du prochain caractère à écrire pour retourner dans l'état de l'itération parente (nécéssaire car lg est static, sinon on peut la passer en paramètre de la fonction)
 		lg--;
 
 		//une fois qu'on a fini d'écrire un mot, on parcour sa branche frère
 		if (a->frered != NULL)
-			afficheArbreDico(a->frered);
+			afficheArbreLexique(a->frered);
 	}
 }
 
 
 //FONCTION POUR LA QUESTION 1 :
-void afficheDico(char* filename) {
+//TODO : charger l'arbre filename.DICO si il existe et
+void afficheLexique(char* filename) {
 	//affiche dans la console les mots du fichier ayant pour chemin [filename] en ordre alphabétique
-	
 	FILE *in = NULL;
 	in = fopen(filename, "r");
 
-	Arbre a = ConstruitArbre(in);
-	afficheArbreDico(a);
-
-	fclose(in);
+	if (in != NULL) {
+		Arbre a = ConstruitArbre(in);
+		afficheArbreLexique(a);
+		fclose(in);
+	} else 
+		printf("Impossible de charger le fichier %s \n", filename);
 }
 
-
-void ecritDico(Arbre a, FILE* out) {
+void ecritLexique(Arbre a, FILE* out) {
 	//ecrit dans le fichier out tous les mots de l'arbre lexico a
 
 	static char buffer [MAXLE]; //chaine de caractère buffer qui contiendra tous les mots un à un
@@ -168,18 +169,19 @@ void ecritDico(Arbre a, FILE* out) {
 			fprintf(out, "%s\n", buffer);
 		else 
 			//sinon on continue de parcourir le mot courant
-			ecritDico(a->filsg, out);
+			ecritLexique(a->filsg, out);
 		//on décrémente la position du prochain caractère à écrire pour retourner dans l'état de l'itération parente (nécéssaire car lg est static, sinon on peut la passer en paramètre de la fonction)
 		lg--;
 
 		//une fois qu'on a fini d'écrire un mot, on parcour sa branche frère
 		if (a->frered != NULL)
-			ecritDico(a->frered, out);
+			ecritLexique(a->frered, out);
 	}
 }
 
 //FONCTION POUR LA QUESTION 2 :
-void sauvegardeDico(char* filename) {
+//TODO : charger l'arbre filename.DICO si il existe
+void sauvegardeLexique(char* filename) {
 	//ecrit dans le fichier [filename].L les mots du fichier ayant pour chemin [filename] en ordre alphabétique 
 	char outfilename[MAXLE] = "";
 	strcat(outfilename, filename);
@@ -188,14 +190,17 @@ void sauvegardeDico(char* filename) {
 	FILE *in = NULL;
 	FILE *out = NULL;
 	in = fopen(filename, "r");
-	out = fopen(outfilename, "w");
 
-	Arbre a = ConstruitArbre(in);
+	if (in != NULL) {
+		out = fopen(outfilename, "w");
+		Arbre a = ConstruitArbre(in);
+		ecritLexique(a, out);
+		fclose(out);
+		fclose(in);
+	} else
+		printf("Impossible de charger le fichier %s \n", filename);
 
-	ecritDico(a, out);
 
-	fclose(in);
-	fclose(out);
 }
 
 int recherche(Arbre a, char* mot) {
@@ -215,10 +220,103 @@ int recherche(Arbre a, char* mot) {
 }
 
 //FONCTION POUR LA QUESTION 3 :
+//TODO : charger l'arbre filename.DICO si il existe
 int present(char* filename, char* mot) {
-	//affiche present  
+	//affiche present si le mot [mot] est présent dans le document [filename]
+	FILE *in = NULL;
+	int out= -1;
+	
+	in = fopen(filename, "r");
+
+		if (in != NULL) {
+			Arbre a = ConstruitArbre(in);
+			out = recherche(a, mot);
+			out ? printf("present\n") : printf("absent\n");
+			fclose(in);
+		} else
+			printf("Impossible de charger le fichier %s \n", filename);
+
+
+	return out;
 }
 
+
+//parcours préfixe : ngd
+void ecritArbrePrefixe(Arbre a, FILE* out) {
+	/*ecrit le parcours préfixe de l'arbre a dans le fichier out*/
+	if (a != NULL) {
+		if (a->lettre == '\0'){
+			fprintf(out, " ");
+		} else {
+			fprintf(out, "%c", a->lettre);
+			ecritArbrePrefixe(a->filsg, out);
+		}
+		ecritArbrePrefixe(a->frered, out);
+	} else 
+		fprintf(out, "\n");
+}
+
+//FONCTION POUR LA QUESTION 4 :
+void sauvegardeDico(char* filename) {
+	//ecrit dans le fichier [filename].DICO le parcours préfixe de l'arbre décrivant le lexique du fichier [filename] 
+	char outfilename[MAXLE] = "";
+	strcat(outfilename, filename);
+	strcat(outfilename, ".DICO");
+	
+	FILE *in = NULL;
+	FILE *out = NULL;
+	in = fopen(filename, "r");
+
+	if (in != NULL) {
+		out = fopen(outfilename, "w");
+		Arbre a = ConstruitArbre(in);
+		ecritArbrePrefixe(a, out);
+		fclose(out);
+		fclose(in);
+	} else
+		printf("Impossible de charger le fichier %s \n", filename);
+}
+
+//parcours préfixe : ngd
+void litArbrePrefixe(Arbre* a, FILE* in) {
+	/*créé l'arbre a à partir du fichier décrivant son parcours préfixe*/
+	char c;
+	if (fscanf(in, "%c", &c) != EOF) {
+		if (c != '\n') {
+			if (c ==' ') {
+				*a = alloueArbre('\0');
+			} else {
+				*a = alloueArbre(c);
+				litArbrePrefixe(&(*a)->filsg, in);
+			}
+			litArbrePrefixe(&(*a)->frered, in);
+		}
+	}
+}
+
+Arbre chargeDico(char* filename) {
+	//retourne l'arbre créé à partir de son parcour préfixe décrit dans le fichier [filename].DICO
+	FILE *in = NULL;
+	Arbre a = NULL;
+	char dicoFilename[MAXLE] = "";
+	strcat(dicoFilename, filename);
+	strcat(dicoFilename, ".DICO"); 
+
+	in = fopen(dicoFilename, "r");
+
+	if (in != NULL) {
+		litArbrePrefixe(&a, in);		
+		fclose(in);
+	} else {
+		printf("Impossible de charger le fichier %s \n", dicoFilename);
+		return (Arbre)-1; //erreur à récupérer dans les fonctions appelant chargeDico
+	}
+	
+	return a;
+}
+
+
+//FONCTIONS DE MENU
 void afficheMenu(){
 	/* affiche le menu */
 	printf("ARBRE LEXICOGRAPHIE - MENU : \n");
@@ -256,7 +354,7 @@ int main() {
 	switch(action){
 		case 1:
 			printf("Affichage du lexique : \n");
-			afficheDico(a);
+			afficheArbreLexique(a);
 			break;
 		case 2:
 			printf("Sauvegarde du lexique.\n");
