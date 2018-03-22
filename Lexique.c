@@ -101,14 +101,64 @@ void ajouteMot(Arbre* a, char* mot) {
 }
 
 
-Arbre ConstruitArbre(FILE* in) {
-	// retourne l'arbre décrivant le lexique du fichier in
-	Arbre a = NULL;
-	char motBuffer[MAXLE];
+Arbre ConstruitArbre(char* filename) {
+	// retourne l'arbre décrivant le lexique du fichier à filename
+	printf("construction de l'arbre ... \n");
+	FILE *in = NULL;
+	in = fopen(filename, "r");
 
-	while(fscanf(in,"%s", motBuffer) != EOF){		
-		ajouteMot(&a, motBuffer);
+	Arbre a = NULL;
+	if (in != NULL) {
+		char motBuffer[MAXLE];
+
+		while(fscanf(in,"%s", motBuffer) != EOF){		
+			ajouteMot(&a, motBuffer);
+		}
+		fclose(in);
+	} else { 
+		printf("Impossible de charger le fichier \"%s\" \n", filename);
+		return NULL;
 	}
+	printf("OK\n");
+	return a;
+}
+
+//parcours préfixe : ngd
+void litArbrePrefixe(Arbre* a, FILE* in) {
+	/*créé l'arbre a à partir du fichier décrivant son parcours préfixe*/
+	char c;
+	if (fscanf(in, "%c", &c) != EOF) {
+		if (c != '\n') {
+			if (c ==' ') {
+				*a = alloueArbre('\0');
+			} else {
+				*a = alloueArbre(c);
+				litArbrePrefixe(&(*a)->filsg, in);
+			}
+			litArbrePrefixe(&(*a)->frered, in);
+		}
+	}
+}
+
+Arbre chargeDico(char* filename) {
+	//retourne l'arbre créé à partir de son parcour préfixe décrit dans le fichier [filename].DICO
+	printf("chargement du fichier .DICO ... \n");
+	FILE *in = NULL;
+	Arbre a = NULL;
+	char dicoFilename[MAXLE] = "";
+	strcat(dicoFilename, filename);
+	strcat(dicoFilename, ".DICO"); 
+
+	in = fopen(dicoFilename, "r");
+
+	if (in != NULL) {
+		litArbrePrefixe(&a, in);		
+		fclose(in);
+	} else {
+		printf("Impossible de charger le fichier \"%s\" \n", dicoFilename);
+		return NULL; //erreur à récupérer dans les fonctions appelant chargeDico
+	}
+	printf("OK\n");
 	return a;
 }
 
@@ -139,18 +189,18 @@ void afficheArbreLexique(Arbre a) {
 
 
 //FONCTION POUR LA QUESTION 1 :
-//TODO : charger l'arbre filename.DICO si il existe et
 void afficheLexique(char* filename) {
 	//affiche dans la console les mots du fichier ayant pour chemin [filename] en ordre alphabétique
-	FILE *in = NULL;
-	in = fopen(filename, "r");
 
-	if (in != NULL) {
-		Arbre a = ConstruitArbre(in);
+	Arbre a = chargeDico(filename);
+	if (a == NULL)
+		a = ConstruitArbre(filename);
+
+	if (a != NULL) {
+		printf("Affichage du lexique ...\n");
 		afficheArbreLexique(a);
-		fclose(in);
 	} else 
-		printf("Impossible de charger le fichier %s \n", filename);
+		printf("l'arbre lexico est nul. pas de résultat.\n");
 }
 
 void ecritLexique(Arbre a, FILE* out) {
@@ -179,30 +229,29 @@ void ecritLexique(Arbre a, FILE* out) {
 }
 
 //FONCTION POUR LA QUESTION 2 :
-//TODO : charger l'arbre filename.DICO si il existe
 void sauvegardeLexique(char* filename) {
 	//ecrit dans le fichier [filename].L les mots du fichier ayant pour chemin [filename] en ordre alphabétique 
-	char outfilename[MAXLE] = "";
-	strcat(outfilename, filename);
-	strcat(outfilename, ".L");
 	
-	FILE *in = NULL;
-	FILE *out = NULL;
-	in = fopen(filename, "r");
-
-	if (in != NULL) {
+	Arbre a = chargeDico(filename);
+	if (a == NULL)
+		a = ConstruitArbre(filename);
+	if (a != NULL) {
+		printf("Sauvegarde du lexique ... \n");
+		char outfilename[MAXLE] = "";
+		strcat(outfilename, filename);
+		strcat(outfilename, ".L");
+		FILE *out = NULL;
 		out = fopen(outfilename, "w");
-		Arbre a = ConstruitArbre(in);
+		
 		ecritLexique(a, out);
+		
 		fclose(out);
-		fclose(in);
-	} else
-		printf("Impossible de charger le fichier %s \n", filename);
-
-
+		printf("OK\n");
+	} else 
+		printf("l'arbre lexico est nul. pas de résultat.\n");
 }
 
-int recherche(Arbre a, char* mot) {
+int recherche(char* mot, Arbre a) {
 	//retourne 1 si le mot existe dans l'arbre lexico, 0 sinon
 	if  (a == NULL)
 		return 0;
@@ -212,31 +261,30 @@ int recherche(Arbre a, char* mot) {
 		//si la lettre courante est '\0' on a trouvé le mot
 		if (mot[0] == '\0')
 			return 1;
-		return recherche(a->filsg, &mot[1]);
+		return recherche(&mot[1], a->filsg);
 	}
 	//sinon, on va tester le frere droit de la racine
-	return recherche(a->frered, mot);
+	return recherche(mot, a->frered);
 }
 
 //FONCTION POUR LA QUESTION 3 :
-//TODO : charger l'arbre filename.DICO si il existe
 int present(char* mot, char* filename) {
 	//affiche present si le mot [mot] est présent dans le document [filename]
-	FILE *in = NULL;
-	int out= -1;
+
+	int out = -1;
 	
-	in = fopen(filename, "r");
-
-		if (in != NULL) {
-			Arbre a = ConstruitArbre(in);
-			out = recherche(a, mot);
-			out ? printf("present\n") : printf("absent\n");
-			fclose(in);
-		} else
-			printf("Impossible de charger le fichier %s \n", filename);
-
-
+	Arbre a = chargeDico(filename);
+	if (a == NULL)
+		a = ConstruitArbre(filename);
+	
+	if (a != NULL) {
+		printf("recherche de \"%s\" dans le fichier \"%s\" ... \n", mot, filename);
+		out = recherche(mot, a);
+		out ? printf("present\n") : printf("absent\n");
+	} else 
+		printf("l'arbre lexico est nul. pas de résultat.\n");
 	return out;
+
 }
 
 
@@ -262,63 +310,24 @@ void sauvegardeDico(char* filename) {
 	strcat(outfilename, filename);
 	strcat(outfilename, ".DICO");
 	
-	FILE *in = NULL;
-	FILE *out = NULL;
-	in = fopen(filename, "r");
-
-	if (in != NULL) {
+	Arbre a = ConstruitArbre(filename);
+	
+	if (a != NULL) {
+		printf("Sauvegarde de l'arbre ... \n");
+		FILE *out = NULL;
 		out = fopen(outfilename, "w");
-		Arbre a = ConstruitArbre(in);
 		ecritArbrePrefixe(a, out);
 		fclose(out);
-		fclose(in);
-	} else
-		printf("Impossible de charger le fichier %s \n", filename);
-}
 
-//parcours préfixe : ngd
-void litArbrePrefixe(Arbre* a, FILE* in) {
-	/*créé l'arbre a à partir du fichier décrivant son parcours préfixe*/
-	char c;
-	if (fscanf(in, "%c", &c) != EOF) {
-		if (c != '\n') {
-			if (c ==' ') {
-				*a = alloueArbre('\0');
-			} else {
-				*a = alloueArbre(c);
-				litArbrePrefixe(&(*a)->filsg, in);
-			}
-			litArbrePrefixe(&(*a)->frered, in);
-		}
+		printf("OK\n");
 	}
-}
-
-Arbre chargeDico(char* filename) {
-	//retourne l'arbre créé à partir de son parcour préfixe décrit dans le fichier [filename].DICO
-	FILE *in = NULL;
-	Arbre a = NULL;
-	char dicoFilename[MAXLE] = "";
-	strcat(dicoFilename, filename);
-	strcat(dicoFilename, ".DICO"); 
-
-	in = fopen(dicoFilename, "r");
-
-	if (in != NULL) {
-		litArbrePrefixe(&a, in);		
-		fclose(in);
-	} else {
-		printf("Impossible de charger le fichier %s \n", dicoFilename);
-		return (Arbre)-1; //erreur à récupérer dans les fonctions appelant chargeDico
-	}
-	
-	return a;
 }
 
 
 //FONCTIONS DE MENU
-/* gère les lignes de commandes spécifiques */
-void commande(char *com, char* filename, char* mot){
-	switch(com[1]){
+void commande(char *option, char* mot, char* filename){
+	/* gère les lignes de commandes avec options */
+	switch(option[1]){
 			case 'l':
 				afficheLexique(filename);
 				break;
@@ -336,74 +345,87 @@ void commande(char *com, char* filename, char* mot){
 		}
 
 }
-/* affiche les options du menu */
 void afficheMenu(){
-	/* affiche le menu */
+	/* affiche les options du menu */
 	printf("ARBRE LEXICOGRAPHIE - MENU : \n");
-	printf("Sélectionnez l'action voulue s il vous plaît \n");
-	printf("\t 1. Affichage des mots du lexique en ordre alphabétique.\n");
-	printf("\t 2. Sauvegarde des mots en ordre alphabétique.\n");
-	printf("\t 3. Recherche d un mot.\n");
-	printf("\t 4. Sauvegarde de l'arbre\n");
+	printf("---------------------------- \n");
+	printf("Sélectionnez l'action voulue s'il vous plaît \n");
+	printf("\t0. sortir du programme.\n");
+	printf("\t1. Afficher les mots du lexique en ordre alphabétique.\n");
+	printf("\t2. Sauvegarder les mots du lexique en ordre alphabétique.\n");
+	printf("\t3. Rechercher un mot.\n");
+	printf("\t4. Sauvegarder l'arbre\n");
 }
-/* récupère l'action voulue */
-void recupererAction(int* action){
-	/* récupère l'action vioulue par l'utilisateur */
-	printf("Action n° : ");
-	scanf("%d", action);
-	printf("\n");
+
+int recupererAction() {
+	/*scan et renvoie un entier entre 0 et 4
+	 avec une sécurité en cas d'input non voulu*/
+	char line[256];
+	int tmp = -1;
+	while (1) {
+		printf("Action n° : ");
+		tmp = -1;
+
+		if (fgets(line, sizeof(line), stdin)) {
+    		if (1 == sscanf(line, "%d", &tmp) &&
+    			tmp >= 0 && tmp < 5) {
+        		/* input can be safely used */
+        		return tmp;
+     		}
+		}
+		printf("Erreur : veuillez entrer un entier entre 0 et 5.\n");
+  	}
 }
+
 /* execute action sur fichier */
 void executerAction(int action, char* filename){
-	char* mot="";
+	char mot[MAXLE];
 	switch(action){
+			case 0:
+				//sortie du programme
+				break;
 			case 1:
-				printf("Affichage du lexique : \n");
 				afficheLexique(filename);
 				break;
 			case 2:
-				printf("Sauvegarde du lexique.\n");
 				sauvegardeLexique(filename);
 				break;
 			case 3:
 				printf("Indiquez le mot à rechercher : ");
 				scanf("%s", mot);
-				printf("\n");
 				present(mot, filename);
 				break;
 			case 4:
-				printf("Sauvegarde de l'arbre.\n");
 				sauvegardeDico(filename);
 				break;
 			default:
-				printf("ERROR : numéro hors liste.\n");
+				printf("ERREUR : action non reconnue.\n");
 				break;
 		}	
 }
 
 int main(int argc, char *argv[]) {
 	
-	/* on vérifie qu'il y ait une ligne de commande spécifique */
-	if(argc<=3 && argc < 5&& argv[1]!=NULL && argv[2]!=NULL){
+	/* si des options sont spécifiées */
+	if(argc >= 3 && argc < 5 && argv[1]!=NULL && argv[2] != NULL){
 		if(argc==3)
-			commande(argv[1], argv[2], NULL);
+			commande(argv[1], NULL, argv[2]);
 		else
 			commande(argv[1], argv[2], argv[3]);
 	}
 	/* sinon on vérifie qu'il y ait bien un nom de fichier */
-	else if(argc==2 && argv[1]!=NULL){
-		char* filename=argv[1];
+	else if(argc == 2 && argv[1] != NULL){
+		char* filename = argv[1];
 		/* affiche menu */
 		afficheMenu();
 		/*récupération action */
-		int action;
-		recupererAction(&action);
+		int action = recupererAction();
 		/* exécution action */
 		executerAction(action, filename);
 	}
 	/* sinon erreur */
 	else{
-		printf("ERROR : veuillez entrer une ligne de commande valide ou entrer un nom de fichier.\n");
+		printf("ERREUR : veuillez entrer un nom de fichier existant en argument ainsi que des options valides.\n");
 	}
 
 	return 0;
