@@ -40,7 +40,6 @@ et et retourne son adresse*/
 		tmp->filsg = NULL;
 		tmp->frered = NULL;
 	} else printf("malloc error\n");
-
 	return tmp;
 }
 
@@ -221,7 +220,7 @@ int recherche(Arbre a, char* mot) {
 
 //FONCTION POUR LA QUESTION 3 :
 //TODO : charger l'arbre filename.DICO si il existe
-int present(char* filename, char* mot) {
+int present(char* mot, char* filename) {
 	//affiche present si le mot [mot] est présent dans le document [filename]
 	FILE *in = NULL;
 	int out= -1;
@@ -317,6 +316,27 @@ Arbre chargeDico(char* filename) {
 
 
 //FONCTIONS DE MENU
+/* gère les lignes de commandes spécifiques */
+void commande(char *com, char* filename, char* mot){
+	switch(com[1]){
+			case 'l':
+				afficheLexique(filename);
+				break;
+			case 's':
+				sauvegardeLexique(filename);
+				break;
+			case 'r':
+				present(mot, filename);
+				break;
+			case 'S':
+				sauvegardeDico(filename);
+				break;
+			default:
+				break;		
+		}
+
+}
+/* affiche les options du menu */
 void afficheMenu(){
 	/* affiche le menu */
 	printf("ARBRE LEXICOGRAPHIE - MENU : \n");
@@ -326,53 +346,64 @@ void afficheMenu(){
 	printf("\t 3. Recherche d un mot.\n");
 	printf("\t 4. Sauvegarde de l'arbre\n");
 }
-
-void selectMenu(int* action){
+/* récupère l'action voulue */
+void recupererAction(int* action){
 	/* récupère l'action vioulue par l'utilisateur */
 	printf("Action n° : ");
 	scanf("%d", action);
 	printf("\n");
 }
-
-int main() {
-
-	Arbre a = NULL;
-	
-	ajouteMot(&a,"de");
-	ajouteMot(&a,"la");
-	ajouteMot(&a,"le");
-	ajouteMot(&a,"un");
-	ajouteMot(&a,"une");
-		
-	//afficheArbJoli(a,0);
-	
+/* execute action sur fichier */
+void executerAction(int action, char* filename){
 	char* mot="";
-	afficheMenu();
-	int action;
-	selectMenu(&action);
-
 	switch(action){
-		case 1:
-			printf("Affichage du lexique : \n");
-			afficheArbreLexique(a);
-			break;
-		case 2:
-			printf("Sauvegarde du lexique.\n");
-			break;
-		case 3:
-			printf("Indiquez le mot à rechercher : ");
-			scanf("%s", mot);
-			printf("\n");
-			recherche(a, mot) ?
-				printf("Le mot figure dans le lexique.\n"):
-				printf("Mot non trouvé.\n");
-			break;
-		case 4:
-			printf("Sauvegarde de l'arbre.\n");
-			break;
-		default:
-			printf("ERROR : numéro hors liste.\n");
-			break;
+			case 1:
+				printf("Affichage du lexique : \n");
+				afficheLexique(filename);
+				break;
+			case 2:
+				printf("Sauvegarde du lexique.\n");
+				sauvegardeLexique(filename);
+				break;
+			case 3:
+				printf("Indiquez le mot à rechercher : ");
+				scanf("%s", mot);
+				printf("\n");
+				present(mot, filename);
+				break;
+			case 4:
+				printf("Sauvegarde de l'arbre.\n");
+				sauvegardeDico(filename);
+				break;
+			default:
+				printf("ERROR : numéro hors liste.\n");
+				break;
+		}	
+}
+
+int main(int argc, char *argv[]) {
+	
+	/* on vérifie qu'il y ait une ligne de commande spécifique */
+	if(argc<=3 && argc < 5&& argv[1]!=NULL && argv[2]!=NULL){
+		if(argc==3)
+			commande(argv[1], argv[2], NULL);
+		else
+			commande(argv[1], argv[2], argv[3]);
+	}
+	/* sinon on vérifie qu'il y ait bien un nom de fichier */
+	else if(argc==2 && argv[1]!=NULL){
+		char* filename=argv[1];
+		/* affiche menu */
+		afficheMenu();
+		/*récupération action */
+		int action;
+		recupererAction(&action);
+		/* exécution action */
+		executerAction(action, filename);
+	}
+	/* sinon erreur */
+	else{
+		printf("ERROR : veuillez entrer une ligne de commande valide ou entrer un nom de fichier.\n");
 	}
 
 	return 0;
