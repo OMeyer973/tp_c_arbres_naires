@@ -43,6 +43,15 @@ et et retourne son adresse*/
 	return tmp;
 }
 
+void videArbre (Arbre a) {
+	//libère l'espace mémoire alloué à l'arbre a
+	if (a != NULL) {
+		videArbre(a->filsg);
+		videArbre(a->frered);
+	}
+	free(a);
+}
+
 void afficheArbJoli(Arbre a, int niv) {
 	/* affiche l'arbre a sous la forme d'une arborescence (fg en haut, fd en bas)
 	Pour appeller le dessin de l'arbre a, taper afficheArbJoli(a,0); */
@@ -201,6 +210,7 @@ void afficheLexique(char* filename) {
 		afficheArbreLexique(a);
 	} else 
 		printf("l'arbre lexico est nul. pas de résultat.\n");
+	 videArbre (a);
 }
 
 void ecritLexique(Arbre a, FILE* out) {
@@ -236,7 +246,7 @@ void sauvegardeLexique(char* filename) {
 	if (a == NULL)
 		a = ConstruitArbre(filename);
 	if (a != NULL) {
-		printf("Sauvegarde du lexique ... \n");
+		printf("Sauvegarde du fichier %s.L ... \n",filename);
 		char outfilename[MAXLE] = "";
 		strcat(outfilename, filename);
 		strcat(outfilename, ".L");
@@ -249,6 +259,7 @@ void sauvegardeLexique(char* filename) {
 		printf("OK\n");
 	} else 
 		printf("l'arbre lexico est nul. pas de résultat.\n");
+	 videArbre (a);
 }
 
 int recherche(char* mot, Arbre a) {
@@ -283,8 +294,9 @@ int present(char* mot, char* filename) {
 		out ? printf("present\n") : printf("absent\n");
 	} else 
 		printf("l'arbre lexico est nul. pas de résultat.\n");
-	return out;
 
+	videArbre (a);
+	return out;
 }
 
 
@@ -302,6 +314,9 @@ void ecritArbrePrefixe(Arbre a, FILE* out) {
 	} else 
 		fprintf(out, "\n");
 }
+
+
+
 
 //FONCTION POUR LA QUESTION 4 :
 void sauvegardeDico(char* filename) {
@@ -321,6 +336,122 @@ void sauvegardeDico(char* filename) {
 
 		printf("OK\n");
 	}
+	videArbre (a);
+}
+
+
+//FONCTION QUESTION 5 : rendu en dot
+static int idNoeud;
+
+void ecritFgfrdDotRec(Arbre a, FILE* out) {
+	//ecrit le code dot représentant l'arbre a sous forme fils gauche frere droit dans le fichier out
+	if (a != NULL) {
+
+		fprintf(out, "n%d[label=\"",idNoeud);
+		int currId = idNoeud;
+		idNoeud++;
+
+		if (a->lettre == '\0'){
+			fprintf(out, "/0");
+		} else {
+			fprintf(out, "%c", a->lettre);
+		}
+		fprintf(out, "\"];\n\t");
+		
+		if (a->frered != NULL) {
+			fprintf(out, "n%d -> n%d;\n\t", currId, idNoeud);
+			fprintf(out, "{rank=same; n%d n%d}\n\t",currId, idNoeud);
+			ecritFgfrdDotRec(a->frered, out);
+		}
+		if (a->filsg != NULL) {
+			fprintf(out, "n%d -> n%d;\n\t", currId, idNoeud);
+			ecritFgfrdDotRec(a->filsg, out);
+		}
+	}
+}
+
+void ecritFgfrdDot(char* filename) {
+	//ecrit le code dot représentant l'arbre a sous forme fils gauche frere droit dans le fichier de nom filename
+
+	Arbre a = chargeDico(filename);
+	if (a == NULL)
+		a = ConstruitArbre(filename);
+	
+	if (a != NULL) {
+		printf("Sauvegarde du fichier %s_fgfrd.DOT ... \n",filename);
+		char outfilename[MAXLE] = "";
+		strcat(outfilename, filename);
+		strcat(outfilename, "_fgfrd.DOT");
+
+		FILE *out = NULL;
+		out = fopen(outfilename, "w");
+		
+		fprintf(out, "digraph %s {\n\tnode [shape=square];\n\t",filename);
+			ecritFgfrdDotRec(a, out);
+		fprintf(out, "}");
+
+		fclose(out);
+		printf("OK\n");
+	} else 
+		printf("l'arbre lexico est nul. pas de résultat.\n");
+	 videArbre (a);
+}
+
+//FONCTION POUR LA QUESTION 5 : représentation de l'arbre lexico à n fils au format dot
+void ecritArbreLexDotRec(Arbre a, FILE* out, int idPere) {
+	//ecrit le code dot représentant l'arbre a lexico à n fils dans le fichier out
+	if (a != NULL) {
+
+		fprintf(out, "n%d[label=\"",idNoeud);
+		int currId = idNoeud;
+		idNoeud++;
+
+		if (a->lettre == '\0'){
+			fprintf(out, "/0");
+		} else {
+			fprintf(out, "%c", a->lettre);
+		}
+		fprintf(out, "\"];\n\t");
+		fprintf(out, "n%d -> n%d;\n\t", idPere, currId);
+		
+		if (a->frered != NULL) {
+			fprintf(out, "{rank=same; n%d n%d}\n\t",currId, idNoeud);
+			ecritArbreLexDotRec(a->frered, out, idPere);
+		}
+		if (a->filsg != NULL) {
+			ecritArbreLexDotRec(a->filsg, out, currId);
+		}
+	}
+}
+
+void ecritArbreLexDot(char* filename) {
+	//ecrit le code dot représentant l'arbre a lexico à n fils dans le fichier filename
+
+	Arbre a = chargeDico(filename);
+	if (a == NULL)
+		a = ConstruitArbre(filename);
+	
+	if (a != NULL) {
+		printf("Sauvegarde du fichier %s_lex.DOT ... \n", filename);
+		char outfilename[MAXLE] = "";
+		strcat(outfilename, filename);
+		strcat(outfilename, "_lex.DOT");
+
+		FILE *out = NULL;
+		out = fopen(outfilename, "w");
+		
+		fprintf(out, "digraph %s {\n\t",filename);
+			fprintf(out, "node [shape=square];\n\t");
+			fprintf(out, "n%d[label=\"orig\"];\n\t",idNoeud);
+			idNoeud++;
+			ecritArbreLexDotRec(a, out, idNoeud-1);
+		fprintf(out, "}");
+
+		fclose(out);
+		printf("OK\n");
+	} else 
+		printf("l'arbre lexico est nul. pas de résultat.\n");
+	 videArbre (a);
 }
 
 
@@ -340,6 +471,12 @@ void commande(char *option, char* mot, char* filename){
 			case 'S':
 				sauvegardeDico(filename);
 				break;
+			case 'd':
+				ecritFgfrdDot(filename);
+				break;
+			case 'D':
+				ecritArbreLexDot(filename);
+				break;
 			default:
 				break;		
 		}
@@ -355,6 +492,8 @@ void afficheMenu(){
 	printf("\t2. Sauvegarder les mots du lexique en ordre alphabétique.\n");
 	printf("\t3. Rechercher un mot.\n");
 	printf("\t4. Sauvegarder l'arbre\n");
+	printf("\t5. Sauvegarder le fichier dot représantant l'arbre fils gauche frere droit.\n");
+	printf("\t6. Sauvegarder le fichier dot représantant l'arbre lexicographique à n fils.\n");
 }
 
 int recupererAction() {
@@ -368,12 +507,12 @@ int recupererAction() {
 
 		if (fgets(line, sizeof(line), stdin)) {
     		if (1 == sscanf(line, "%d", &tmp) &&
-    			tmp >= 0 && tmp < 5) {
+    			tmp >= 0 && tmp <= 6) {
         		/* input can be safely used */
         		return tmp;
      		}
 		}
-		printf("Erreur : veuillez entrer un entier entre 0 et 5.\n");
+		printf("Erreur : veuillez entrer un entier entre 0 et 6.\n");
   	}
 }
 
@@ -397,6 +536,12 @@ void executerAction(int action, char* filename){
 				break;
 			case 4:
 				sauvegardeDico(filename);
+				break;
+			case 5:
+				ecritFgfrdDot(filename);
+				break;
+			case 6:
+				ecritArbreLexDot(filename);
 				break;
 			default:
 				printf("ERREUR : action non reconnue.\n");
