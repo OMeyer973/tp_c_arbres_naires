@@ -1,9 +1,5 @@
 /* HARABAGIU Léa, MEYER Olivier */
 
-/*
-https://elearning.u-pem.fr/pluginfile.php/182569/mod_resource/content/1/FilsGaucheFrereDroit.pdf
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +26,7 @@ arbre n-aire contenant les mots "de", "la", "le", "un", "une"
 		        #
 */
 
+
 Arbre alloueArbre (char l) {
 /*alloue un espace mémoire à un arbre de lettre l, filsg NULL, frered NULL
 et et retourne son adresse*/
@@ -51,23 +48,6 @@ void videArbre (Arbre a) {
 	}
 	free(a);
 }
-
-void afficheArbJoli(Arbre a, int niv) {
-	/* affiche l'arbre a sous la forme d'une arborescence (fg en haut, fd en bas)
-	Pour appeller le dessin de l'arbre a, taper afficheArbJoli(a,0); */
-	int i = 0;
-	for (i=0; i<niv; i++) {
-		printf("|   ");
-	}
-	if (a == NULL)
-		printf("-\n");
-	else {
-		(a->lettre == '\0') ? printf("\\0\n") : printf("%c\n", a->lettre);
-		afficheArbJoli(a->filsg, 1 + niv);
-		afficheArbJoli(a->frered, 1 + niv);
-	}
-}
-
 
 void ajouteBranche(Arbre* a, char* mot) {
 	//ajoute un mot à un arbre vide (écrase l'arbre si non vide)
@@ -237,7 +217,7 @@ void ecritLexique(Arbre a, FILE* out) {
 			ecritLexique(a->frered, out);
 	}
 }
-
+ 
 //FONCTION POUR LA QUESTION 2 :
 void sauvegardeLexique(char* filename) {
 	//ecrit dans le fichier [filename].L les mots du fichier ayant pour chemin [filename] en ordre alphabétique 
@@ -328,7 +308,7 @@ void sauvegardeDico(char* filename) {
 	Arbre a = ConstruitArbre(filename);
 	
 	if (a != NULL) {
-		printf("Sauvegarde de l'arbre ... \n");
+		printf("Sauvegarde du fichier .DICO ... \n");
 		FILE *out = NULL;
 		out = fopen(outfilename, "w");
 		ecritArbrePrefixe(a, out);
@@ -344,7 +324,7 @@ void sauvegardeDico(char* filename) {
 static int idNoeud;
 
 void ecritFgfrdDotRec(Arbre a, FILE* out) {
-	//ecrit le code dot représentant l'arbre a sous forme fils gauche frere droit dans le fichier out
+	///ecrit le code dot représentant les noeuds de l'arbre a sous forme fils gauche frere droit dans le fichier out
 	if (a != NULL) {
 
 		fprintf(out, "n%d[label=\"",idNoeud);
@@ -397,9 +377,9 @@ void ecritFgfrdDot(char* filename) {
 	 videArbre (a);
 }
 
-//FONCTION POUR LA QUESTION 5 : représentation de l'arbre lexico à n fils au format dot
+//FONCTION POUR LA QUESTION 6 : représentation de l'arbre lexico à n fils au format dot
 void ecritArbreLexDotRec(Arbre a, FILE* out, int idPere) {
-	//ecrit le code dot représentant l'arbre a lexico à n fils dans le fichier out
+	//ecrit les noeuds représentant l'arbre a lexico à n fils dans le fichier dot out
 	if (a != NULL) {
 
 		fprintf(out, "n%d[label=\"",idNoeud);
@@ -497,7 +477,7 @@ void afficheMenu(){
 }
 
 int recupererAction() {
-	/*scan et renvoie un entier entre 0 et 4
+	/*scan et renvoie un entier entre 0 et 6
 	 avec une sécurité en cas d'input non voulu*/
 	char line[256];
 	int tmp = -1;
@@ -508,7 +488,7 @@ int recupererAction() {
 		if (fgets(line, sizeof(line), stdin)) {
     		if (1 == sscanf(line, "%d", &tmp) &&
     			tmp >= 0 && tmp <= 6) {
-        		/* input can be safely used */
+        		/* tmp est bien un entier entre 0 et 6 */
         		return tmp;
      		}
 		}
@@ -516,8 +496,8 @@ int recupererAction() {
   	}
 }
 
-/* execute action sur fichier */
 void executerAction(int action, char* filename){
+	/* execute action sur fichier */
 	char mot[MAXLE];
 	switch(action){
 			case 0:
@@ -552,7 +532,11 @@ void executerAction(int action, char* filename){
 int main(int argc, char *argv[]) {
 	
 	/* si des options sont spécifiées */
-	if(argc >= 3 && argc < 5 && argv[1]!=NULL && argv[2] != NULL){
+	if(argc >= 3 && argc < 5 && 
+		argv[1] != NULL && 
+		strlen(argv[1]) == 2 && 
+		argv[1][0] == '-' &&
+		argv[2] != NULL) {
 		if(argc==3)
 			commande(argv[1], NULL, argv[2]);
 		else
